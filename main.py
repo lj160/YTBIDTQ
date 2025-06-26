@@ -14,6 +14,8 @@ import time
 import pytz
 import csv
 from io import StringIO, BytesIO
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 
 app = Flask(__name__)
 CORS(app)
@@ -342,14 +344,40 @@ def extract_channel_id_from_url(url):
         return None
 
 def get_channel_id_from_identifier(identifier):
-    """通过频道标识符获取真实的频道ID"""
-    # 尝试使用API密钥
+    """通过频道标识符获取真实的频道ID（增强版）"""
     api_key = get_available_api_key()
     if api_key:
-        return get_channel_id_via_api(identifier, api_key)
-    else:
-        # 备用方案：尝试从网页中提取
-        return get_channel_id_from_page(identifier)
+        # 优先用 googleapiclient 官方库多方式查找
+        try:
+            youtube = build('youtube', 'v3', developerKey=api_key)
+            # 1. 直接用 channels().list (forUsername)
+            request = youtube.channels().list(
+                part="id",
+                forUsername=identifier
+            )
+            response = request.execute()
+            if response.get('items'):
+                return response['items'][0]['id']
+            # 2. 用 search().list (q)
+            request = youtube.search().list(
+                part="snippet",
+                q=identifier,
+                type="channel",
+                maxResults=1
+            )
+            response = request.execute()
+            if response.get('items'):
+                return response['items'][0]['snippet']['channelId']
+        except HttpError as e:
+            print(f"Google API client error: {e}")
+        except Exception as e:
+            print(f"Google API client error: {e}")
+        # 兜底：用原有 requests 逻辑
+        cid = get_channel_id_via_api(identifier, api_key)
+        if cid:
+            return cid
+    # 最后用页面抓取兜底
+    return get_channel_id_from_page(identifier)
 
 def get_channel_id_via_api(identifier, api_key):
     """通过YouTube API获取频道ID"""
@@ -645,6 +673,5 @@ if __name__ == '__main__':
     init_db()
     start_background_tasks()
     print("YouTube频道ID提取工具已启动")
-    print("访问地址: http://localhost:8080")
-    print("API密钥管理功能已启用")
-    app.run(debug=True, host='0.0.0.0', port=8080) 
+    port = int(os.environ.get("PORT", 8080))  # 兼容本地和云平台
+    app.run(debug=True, host='0.0.0.0', port=port) 
