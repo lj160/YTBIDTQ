@@ -645,6 +645,6 @@ if __name__ == '__main__':
     init_db()
     start_background_tasks()
     print("YouTube频道ID提取工具已启动")
-    print("访问地址: http://localhost:5000")
+    print("访问地址: http://localhost:8080")
     print("API密钥管理功能已启用")
-    app.run(debug=True, host='0.0.0.0', port=5000) 
+    app.run(debug=True, host='0.0.0.0', port=8080) 
