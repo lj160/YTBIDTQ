@@ -1,6 +1,5 @@
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
-import sqlite3
 import re
 import requests
 import json
@@ -17,6 +16,8 @@ from io import StringIO, BytesIO
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from cryptography.fernet import Fernet
+import psycopg2
+from psycopg2.extras import RealDictCursor
 
 app = Flask(__name__)
 CORS(app)
@@ -24,51 +25,10 @@ CORS(app)
 # 香港时区
 HK_TIMEZONE = pytz.timezone('Asia/Hong_Kong')
 
-# 数据库初始化
-def init_db():
-    conn = sqlite3.connect('youtube_channels.db')
-    cursor = conn.cursor()
-    
-    # 频道表
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS channels (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            channel_id TEXT UNIQUE NOT NULL,
-            channel_url TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    
-    # API密钥表
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS api_keys (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            key_hash TEXT UNIQUE NOT NULL,
-            key_encrypted TEXT NOT NULL,
-            quota_used INTEGER DEFAULT 0,
-            quota_limit INTEGER DEFAULT 9500,
-            last_used TIMESTAMP,
-            is_valid BOOLEAN DEFAULT 1,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            last_checked TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    
-    # 密钥使用记录表
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS key_usage (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            key_id INTEGER,
-            operation TEXT,
-            success BOOLEAN,
-            error_message TEXT,
-            used_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (key_id) REFERENCES api_keys (id)
-        )
-    ''')
-    
-    conn.commit()
-    conn.close()
+DB_CONN_STR = "postgresql://postgres:[YOUR-PASSWORD]@db.tlavhgppuovlshaologk.supabase.co:5432/postgres"
+
+def get_conn():
+    return psycopg2.connect(DB_CONN_STR, cursor_factory=RealDictCursor)
 
 def load_fernet():
     with open("secret.key", "rb") as key_file:
@@ -108,11 +68,11 @@ def add_api_key(api_key):
         if not encrypted_key:
             return False, "密钥加密失败"
         
-        conn = sqlite3.connect('youtube_channels.db')
+        conn = get_conn()
         cursor = conn.cursor()
         
         # 检查是否已存在
-        cursor.execute('SELECT id FROM api_keys WHERE key_hash = ?', (key_hash,))
+        cursor.execute('SELECT id FROM api_keys WHERE key_hash = %s', (key_hash,))
         if cursor.fetchone():
             conn.close()
             return False, "API密钥已存在"
@@ -125,7 +85,7 @@ def add_api_key(api_key):
         # 插入新密钥
         cursor.execute('''
             INSERT INTO api_keys (key_hash, key_encrypted, quota_used, last_used, is_valid)
-            VALUES (?, ?, 0, ?, 1)
+            VALUES (%s, %s, 0, %s, 1)
         ''', (key_hash, encrypted_key, datetime.now()))
         
         conn.commit()
@@ -164,7 +124,7 @@ def test_api_key(api_key):
 def get_available_api_key():
     """获取可用的API密钥（轮询方式）"""
     try:
-        conn = sqlite3.connect('youtube_channels.db')
+        conn = get_conn()
         cursor = conn.cursor()
         
         # 获取所有有效且未超配额的密钥
@@ -199,13 +159,13 @@ def get_available_api_key():
 def update_key_usage(key_id):
     """更新密钥使用情况"""
     try:
-        conn = sqlite3.connect('youtube_channels.db')
+        conn = get_conn()
         cursor = conn.cursor()
         
         cursor.execute('''
             UPDATE api_keys 
-            SET quota_used = quota_used + 1, last_used = ?
-            WHERE id = ?
+            SET quota_used = quota_used + 1, last_used = %s
+            WHERE id = %s
         ''', (datetime.now(), key_id))
         
         conn.commit()
@@ -217,12 +177,12 @@ def update_key_usage(key_id):
 def log_key_usage(key_id, operation, success, error_message=None):
     """记录密钥使用日志"""
     try:
-        conn = sqlite3.connect('youtube_channels.db')
+        conn = get_conn()
         cursor = conn.cursor()
         
         cursor.execute('''
             INSERT INTO key_usage (key_id, operation, success, error_message)
-            VALUES (?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s)
         ''', (key_id, operation, success, error_message))
         
         conn.commit()
@@ -234,7 +194,7 @@ def log_key_usage(key_id, operation, success, error_message=None):
 def check_api_keys_validity():
     """检查所有API密钥的有效性"""
     try:
-        conn = sqlite3.connect('youtube_channels.db')
+        conn = get_conn()
         cursor = conn.cursor()
         
         cursor.execute('SELECT id, key_encrypted FROM api_keys WHERE is_valid = 1')
@@ -246,8 +206,8 @@ def check_api_keys_validity():
                 is_valid = test_api_key(api_key)
                 cursor.execute('''
                     UPDATE api_keys 
-                    SET is_valid = ?, last_checked = ?
-                    WHERE id = ?
+                    SET is_valid = %s, last_checked = %s
+                    WHERE id = %s
                 ''', (1 if is_valid else 0, datetime.now(), key_id))
                 
                 if not is_valid:
@@ -263,7 +223,7 @@ def check_api_keys_validity():
 def reset_daily_quotas():
     """重置每日配额"""
     try:
-        conn = sqlite3.connect('youtube_channels.db')
+        conn = get_conn()
         cursor = conn.cursor()
         
         cursor.execute('UPDATE api_keys SET quota_used = 0')
@@ -466,9 +426,9 @@ def get_channel_id_from_page(identifier):
 def check_channel_exists(channel_id):
     """检查频道ID是否已存在于数据库中"""
     try:
-        conn = sqlite3.connect('youtube_channels.db')
+        conn = get_conn()
         cursor = conn.cursor()
-        cursor.execute('SELECT * FROM channels WHERE channel_id = ?', (channel_id,))
+        cursor.execute('SELECT * FROM channels WHERE channel_id = %s', (channel_id,))
         result = cursor.fetchone()
         conn.close()
         return result is not None
@@ -479,15 +439,13 @@ def check_channel_exists(channel_id):
 def save_channel(channel_id, channel_url):
     """保存频道ID到数据库"""
     try:
-        conn = sqlite3.connect('youtube_channels.db')
+        conn = get_conn()
         cursor = conn.cursor()
-        cursor.execute('INSERT INTO channels (channel_id, channel_url) VALUES (?, ?)', 
+        cursor.execute('INSERT INTO channels (channel_id, channel_url) VALUES (%s, %s)', 
                       (channel_id, channel_url))
         conn.commit()
         conn.close()
         return True
-    except sqlite3.IntegrityError:
-        return False  # 频道ID已存在
     except Exception as e:
         print(f"Error saving channel: {e}")
         return False
@@ -516,7 +474,7 @@ def add_key():
 def get_keys():
     """获取API密钥状态"""
     try:
-        conn = sqlite3.connect('youtube_channels.db')
+        conn = get_conn()
         cursor = conn.cursor()
         
         cursor.execute('''
@@ -562,9 +520,9 @@ def query_channel():
             return jsonify({'success': False, 'message': '无法提取频道ID，请检查URL格式是否正确'})
         
         # 检查是否已存在，并返回保存时间
-        conn = sqlite3.connect('youtube_channels.db')
+        conn = get_conn()
         cursor = conn.cursor()
-        cursor.execute('SELECT created_at FROM channels WHERE channel_id = ?', (channel_id,))
+        cursor.execute('SELECT created_at FROM channels WHERE channel_id = %s', (channel_id,))
         result = cursor.fetchone()
         conn.close()
         
@@ -620,7 +578,7 @@ def upload_channel():
 def get_channels():
     """获取所有已保存的频道"""
     try:
-        conn = sqlite3.connect('youtube_channels.db')
+        conn = get_conn()
         cursor = conn.cursor()
         cursor.execute('SELECT channel_id, channel_url, created_at FROM channels ORDER BY created_at DESC')
         channels = cursor.fetchall()
@@ -648,7 +606,7 @@ def health_check():
 def download_channels():
     """导出所有频道为CSV文件"""
     try:
-        conn = sqlite3.connect('youtube_channels.db')
+        conn = get_conn()
         cursor = conn.cursor()
         cursor.execute('SELECT channel_id, channel_url, created_at FROM channels ORDER BY created_at DESC')
         channels = cursor.fetchall()
@@ -674,7 +632,6 @@ def download_channels():
         return '导出失败: ' + str(e), 500
 
 if __name__ == '__main__':
-    init_db()
     start_background_tasks()
     print("YouTube频道ID提取工具已启动")
     port = int(os.environ.get("PORT", 8080))  # 兼容本地和云平台
