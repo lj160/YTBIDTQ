@@ -16,6 +16,7 @@ import csv
 from io import StringIO, BytesIO
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
+from cryptography.fernet import Fernet
 
 app = Flask(__name__)
 CORS(app)
@@ -69,24 +70,27 @@ def init_db():
     conn.commit()
     conn.close()
 
-# 加密密钥（实际使用时应该从环境变量获取）
-ENCRYPTION_KEY = os.getenv('ENCRYPTION_KEY', 'your-secret-encryption-key-32-chars-long')
+def load_fernet():
+    with open("secret.key", "rb") as key_file:
+        key = key_file.read()
+    return Fernet(key)
 
 def encrypt_api_key(api_key):
-    """加密API密钥"""
+    """用Fernet加密API密钥"""
     try:
-        # 简单的base64编码（实际生产环境应使用更安全的加密）
-        encoded = base64.b64encode(api_key.encode()).decode()
-        return encoded
+        f = load_fernet()
+        encrypted = f.encrypt(api_key.encode())
+        return encrypted.decode()  # 存数据库用字符串
     except Exception as e:
         print(f"加密失败: {e}")
         return None
 
 def decrypt_api_key(encrypted_key):
-    """解密API密钥"""
+    """用Fernet解密API密钥"""
     try:
-        decoded = base64.b64decode(encrypted_key.encode()).decode()
-        return decoded
+        f = load_fernet()
+        decrypted = f.decrypt(encrypted_key.encode())
+        return decrypted.decode()
     except Exception as e:
         print(f"解密失败: {e}")
         return None
