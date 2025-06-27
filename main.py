@@ -25,7 +25,7 @@ CORS(app)
 # 香港时区
 HK_TIMEZONE = pytz.timezone('Asia/Hong_Kong')
 
-DB_CONN_STR = "postgresql://postgres:[YOUR-PASSWORD]@db.tlavhgppuovlshaologk.supabase.co:5432/postgres"
+DB_CONN_STR = "postgresql://postgres:aiAI918918%40lq518.kl9418m@db.tlavhgppuovlshaologk.supabase.co:5432/postgres"
 
 def get_conn():
     return psycopg2.connect(DB_CONN_STR, cursor_factory=RealDictCursor)
