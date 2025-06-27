@@ -36,26 +36,10 @@ def load_fernet():
     return Fernet(key)
 
 def encrypt_api_key(api_key):
-    """用Fernet加密API密钥，并用base64编码为字符串"""
-    try:
-        f = load_fernet()
-        encrypted = f.encrypt(api_key.encode())
-        encoded = base64.b64encode(encrypted).decode()  # 先base64编码再转字符串
-        return encoded
-    except Exception as e:
-        print(f"加密失败: {e}")
-        return None
+    return api_key  # 明文存储
 
 def decrypt_api_key(encrypted_key):
-    """用Fernet解密API密钥，先base64解码"""
-    try:
-        f = load_fernet()
-        encrypted = base64.b64decode(encrypted_key.encode())
-        decrypted = f.decrypt(encrypted)
-        return decrypted.decode()
-    except Exception as e:
-        print(f"解密失败: {e}")
-        return None
+    return encrypted_key  # 明文读取
 
 def hash_api_key(api_key):
     """生成API密钥的哈希值用于唯一标识"""
