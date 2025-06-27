@@ -596,7 +596,7 @@
             <span id="closeHelp" class="help-modal-close">×</span>
             <div class="help-modal-title">API密钥申请与说明</div>
             <div class="help-modal-content">
-                各位兄弟，本网站提取频道ID（YouTube官方指定的唯一ID，博主无法更改），但是，提取博主频道ID时需要YouTube api v3 秘钥，有谷歌账户的可以前往谷歌Console Cloud申请，<b style='color:#b22222;'>申请这个秘钥是免费</b>，兄弟们不用担心。<br><br>
+                各位兄弟，本网站提取频道ID（YouTube官方指定的唯一ID，博主无法更改），但是，提取频道ID时需要YouTube api v3 秘钥，有谷歌账户的可以前往谷歌Console Cloud申请，<b style='color:#b22222;'>申请这个秘钥是免费</b>，兄弟们不用担心。<br><br>
                 <b>谷歌Console Cloud网址：</b><br>
                 <a href="https://console.cloud.google.com/" target="_blank" style="color:#007bff;word-break:break-all;">https://console.cloud.google.com/</a><br><br>
                 创建一个YouTube API v3 秘钥，添加到本网站的API密钥管理，可以增加本网站的博主频道查询数量，让我们通力合作，避免兄弟们被更多的博主欺骗，造成兄弟们不必要的损失。<br><br>
@@ -612,6 +612,7 @@
                 <div class="help-step">点击启用后进入API服务详情，点击创建凭据或点击凭据（如图九）<br><img src="/static/help9.png" class="help-img" alt="图九"><div class="help-img-label">图九</div></div>
                 <div class="help-step">进入创建凭据后，第一步：选择YouTube Data API v3，第二步选择公开数据，第三步点击完成就可以看到秘钥了，复制秘钥后回到本网站添加到的API 秘钥管理就可以了（如图十）<br><img src="/static/help10.png" class="help-img" alt="图十"><div class="help-img-label">图十</div></div>
                 <div style="margin-top:18px;font-weight:bold;color:#b22222;">感谢兄弟们的通力合作，祝大家财源滚滚，生意兴隆！！！</div>
+                <div style="margin-top:18px;font-weight:bold;color:#333;">如有任何问题，请发送电子邮件：<a href="mailto:facaibaofu86@gmail.com" style="color:#007bff;">facaibaofu86@gmail.com</a></div>
             </div>
         </div>
         <div id="imgPreview" class="img-preview-bg" style="display:none;">
@@ -675,7 +676,9 @@
                     
                     let msg = message;
                     if (exists && message === '频道已存在') {
-                        msg = '频道已存在，谨防<span style="color:#d32f2f;font-weight:bold;">骗子</span>';
+                        msg = '频道有欺骗行为，请谨防<span style="color:#d32f2f;font-weight:bold;">骗子</span>';
+                    } else if (message === '频道没有欺骗记录，如果他欺骗了你，请点击上传') {
+                        msg = '频道没有欺骗记录，如果他欺骗了你，请点击上传';
                     }
                     let resultHtml = `<div class="result-message">${msg}</div>`;
                     if (channelId) {
@@ -687,7 +690,7 @@
                     
                     showResult(resultHtml, exists ? 'success' : 'info');
                 } else {
-                    showResult(data.message, 'error');
+                    showResult('无法识别频道ID，请检查URL链接是否正确', 'error');
                 }
             } catch (error) {
                 showResult('网络错误，请稍后重试', 'error');
@@ -729,7 +732,7 @@
                     showResult(resultHtml, 'success');
                     loadChannels(); // 重新加载频道列表
                 } else {
-                    showResult(data.message, 'error');
+                    showResult('无法识别频道ID，请检查URL链接是否正确', 'error');
                 }
             } catch (error) {
                 showResult('网络错误，请稍后重试', 'error');
@@ -764,7 +767,7 @@
                     document.getElementById('apiKey').value = ''; // 清空输入框
                     loadApiKeys(); // 重新加载密钥列表
                 } else {
-                    showApiResult(data.message, 'error');
+                    showApiResult('无法识别频道ID，请检查URL链接是否正确', 'error');
                 }
             } catch (error) {
                 showApiResult('网络错误，请稍后重试', 'error');
