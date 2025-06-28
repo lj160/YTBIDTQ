@@ -3,4 +3,4 @@
    flask-cors
    pytz
    gunicorn
-   supabase-py
+   supabase
