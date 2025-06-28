@@ -622,6 +622,8 @@
 
     <script>
         let currentTab = 'channel';
+        let lastChannelId = null;
+        let lastChannelUrl = null;
 
         // 切换标签页
         function switchTab(tab) {
@@ -673,7 +675,11 @@
                     const message = data.message;
                     const channelId = data.channel_id;
                     const exists = data.exists;
-                    
+                    // 缓存频道ID和URL
+                    if (channelId) {
+                        lastChannelId = channelId;
+                        lastChannelUrl = url;
+                    }
                     let msg = message;
                     if (exists && message === '频道已存在') {
                         msg = '频道有欺骗行为，请谨防<span style="color:#d32f2f;font-weight:bold;">骗子</span>';
@@ -687,7 +693,6 @@
                     if (data.saved_at) {
                         resultHtml += `<div style='margin-top:8px;font-size:13px;color:#666;'>保存时间: ${formatTime(data.saved_at)}</div>`;
                     }
-                    
                     showResult(resultHtml, exists ? 'success' : 'info');
                 } else {
                     showResult('无法识别频道ID，请检查URL链接是否正确', 'error');
@@ -706,35 +711,33 @@
                 showResult('请输入频道URL', 'error');
                 return;
             }
-
             showLoading(true);
-            
             try {
+                let payload = { channel_url: url };
+                if (lastChannelId && lastChannelUrl === url) {
+                    payload.channel_id = lastChannelId;
+                }
                 const response = await fetch('/api/upload', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ channel_url: url })
+                    body: JSON.stringify(payload)
                 });
-
                 const data = await response.json();
-                
                 if (data.success) {
                     const message = data.message;
                     const channelId = data.channel_id;
-                    
                     let msg = message;
-                    if (message === '频道已存在') {
+                    if (message.includes('频道已存在')) {
                         msg = '频道有欺骗行为，请谨防<span style="color:#d32f2f;font-weight:bold;">骗子</span>';
                     }
                     let resultHtml = `<div class="result-message">${msg}</div>`;
                     if (channelId) {
                         resultHtml += `<div class="channel-id">频道ID: ${channelId}</div>`;
                     }
-                    
                     showResult(resultHtml, 'success');
-                    loadChannels(); // 重新加载频道列表
+                    loadChannels();
                 } else {
                     showResult('无法识别频道ID，请检查URL链接是否正确', 'error');
                 }
