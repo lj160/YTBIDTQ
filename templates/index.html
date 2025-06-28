@@ -682,10 +682,9 @@
                         console.log('查询赋值:', lastChannelId, lastChannelUrl);
                     }
                     let msg = message;
-                    if (exists && message === '频道已存在') {
+                    // 根据后端返回的消息进行前端显示优化
+                    if (exists) {
                         msg = '频道有欺骗行为，请谨防<span style="color:#d32f2f;font-weight:bold;">骗子</span>';
-                    } else if (message === '频道没有欺骗记录，如果他欺骗了你，请点击上传') {
-                        msg = '频道没有欺骗记录，如果他欺骗了你，请点击上传';
                     }
                     let resultHtml = `<div class="result-message">${msg}</div>`;
                     if (channelId) {
@@ -696,7 +695,7 @@
                     }
                     showResult(resultHtml, exists ? 'success' : 'info');
                 } else {
-                    showResult('无法识别频道ID，请检查URL链接是否正确', 'error');
+                    showResult(data.message || '无法识别频道ID，请检查URL链接是否正确', 'error');
                 }
             } catch (error) {
                 showResult('网络错误，请稍后重试', 'error');
@@ -732,18 +731,14 @@
                 if (data.success) {
                     const message = data.message;
                     const channelId = data.channel_id;
-                    let msg = message;
-                    if (message.includes('频道已存在')) {
-                        msg = '频道有欺骗行为，请谨防<span style="color:#d32f2f;font-weight:bold;">骗子</span>';
-                    }
-                    let resultHtml = `<div class="result-message">${msg}</div>`;
+                    let resultHtml = `<div class="result-message">${message}</div>`;
                     if (channelId) {
                         resultHtml += `<div class="channel-id">频道ID: ${channelId}</div>`;
                     }
                     showResult(resultHtml, 'success');
                     loadChannels();
                 } else {
-                    showResult('无法识别频道ID，请检查URL链接是否正确', 'error');
+                    showResult(data.message || '无法识别频道ID，请检查URL链接是否正确', 'error');
                 }
             } catch (error) {
                 showResult('网络错误，请稍后重试', 'error');
@@ -778,7 +773,7 @@
                     document.getElementById('apiKey').value = ''; // 清空输入框
                     loadApiKeys(); // 重新加载密钥列表
                 } else {
-                    showApiResult('无法识别频道ID，请检查URL链接是否正确', 'error');
+                    showApiResult(data.message || 'API密钥添加失败，请检查密钥是否正确', 'error');
                 }
             } catch (error) {
                 showApiResult('网络错误，请稍后重试', 'error');

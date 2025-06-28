@@ -140,8 +140,10 @@ def query_channel():
 @app.route('/api/upload', methods=['POST'])
 def upload_channel():
     data = request.get_json()
+    print("收到上传参数：", data, flush=True)
     url = data.get('channel_url', '').strip()
-    channel_id = data.get('channel_id')  # 必须优先用前端传来的 channel_id
+    channel_id = data.get('channel_id')
+    print("最终用于查库的 channel_id:", channel_id, flush=True)
     if not channel_id:
         channel_id = extract_official_channel_id(url)
         if not channel_id:
@@ -150,10 +152,12 @@ def upload_channel():
     try:
         if channel_id:
             res = supabase.table('channels').select('channel_id').eq('channel_id', channel_id).execute()
+            print("查库结果：", res.data, flush=True)
             if res.data:
                 return jsonify({'success': False, 'message': '频道已存在黑名单，请谨防<span style="color:#d32f2f;font-weight:bold;">骗子</span>', 'channel_id': channel_id})
             # 插入
             res = supabase.table('channels').insert({'channel_id': channel_id}).execute()
+            print("插入结果：", res.data, flush=True)
             if not res.data:
                 return jsonify({'success': False, 'message': '上传失败，未返回数据'})
             return jsonify({'success': True, 'message': '频道成功上传到<span style="color:#d32f2f;font-weight:bold;">黑名单</span>', 'channel_id': channel_id})
