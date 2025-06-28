@@ -724,7 +724,11 @@
                     const message = data.message;
                     const channelId = data.channel_id;
                     
-                    let resultHtml = `<div class="result-message">${message}</div>`;
+                    let msg = message;
+                    if (message === '频道已存在') {
+                        msg = '频道有欺骗行为，请谨防<span style="color:#d32f2f;font-weight:bold;">骗子</span>';
+                    }
+                    let resultHtml = `<div class="result-message">${msg}</div>`;
                     if (channelId) {
                         resultHtml += `<div class="channel-id">频道ID: ${channelId}</div>`;
                     }

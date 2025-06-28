@@ -143,6 +143,15 @@ def upload_channel():
     url = data.get('channel_url', '').strip()
     channel_id = extract_official_channel_id(url)
     if not channel_id:
+        # 新增：尝试查库，看是否已存在
+        # 先用 clean_youtube_url 处理
+        cleaned_url = clean_youtube_url(url)
+        # 尝试查找所有已保存的频道ID
+        all_channels = supabase.table('channels').select('channel_id').execute()
+        if all_channels.data:
+            for ch in all_channels.data:
+                if cleaned_url in ch.get('channel_id', ''):
+                    return jsonify({'success': False, 'message': '频道已存在', 'channel_id': ch['channel_id']})
         return jsonify({'success': False, 'message': '无法识别频道ID'})
     try:
         # 查重
