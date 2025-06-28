@@ -158,6 +158,14 @@ def upload_channel():
                 return jsonify({'success': False, 'message': '上传失败，未返回数据'})
             return jsonify({'success': True, 'message': '频道成功上传到<span style="color:#d32f2f;font-weight:bold;">黑名单</span>', 'channel_id': channel_id})
         else:
+            # 兜底：遍历数据库所有UCxxxx，拼接成 https://www.youtube.com/channel/UCxxxx，与 clean_youtube_url(url) 做包含判断
+            cleaned_url = clean_youtube_url(url)
+            all_channels = supabase.table('channels').select('channel_id').execute()
+            if all_channels.data:
+                for ch in all_channels.data:
+                    uc_url = f"https://www.youtube.com/channel/{ch['channel_id']}"
+                    if cleaned_url == uc_url or uc_url in cleaned_url or cleaned_url in uc_url:
+                        return jsonify({'success': False, 'message': '频道已存在黑名单，请谨防<span style="color:#d32f2f;font-weight:bold;">骗子</span>', 'channel_id': ch['channel_id']})
             return jsonify({'success': False, 'message': '无法识别频道ID'})
     except Exception as e:
         return jsonify({'success': False, 'message': f'上传失败: {e}'})
