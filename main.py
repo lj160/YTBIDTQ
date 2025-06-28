@@ -141,27 +141,23 @@ def query_channel():
 def upload_channel():
     data = request.get_json()
     url = data.get('channel_url', '').strip()
+    # 先用原始URL提取ID
     channel_id = extract_official_channel_id(url)
+    # 再用clean_youtube_url处理后再提一次ID
+    if not channel_id:
+        cleaned_url = clean_youtube_url(url)
+        channel_id = extract_official_channel_id(cleaned_url)
     try:
-        # 先用提取到的ID查重
         if channel_id:
             res = supabase.table('channels').select('channel_id').eq('channel_id', channel_id).execute()
             if res.data:
-                return jsonify({'success': False, 'message': '频道已存在', 'channel_id': channel_id})
+                return jsonify({'success': False, 'message': '频道已存在黑名单，请谨防<span style="color:#d32f2f;font-weight:bold;">骗子</span>', 'channel_id': channel_id})
             # 插入
             res = supabase.table('channels').insert({'channel_id': channel_id}).execute()
             if not res.data:
                 return jsonify({'success': False, 'message': '上传失败，未返回数据'})
             return jsonify({'success': True, 'message': '频道成功上传到<span style="color:#d32f2f;font-weight:bold;">黑名单</span>', 'channel_id': channel_id})
         else:
-            # 提取不到ID时，遍历数据库所有ID做模糊查重
-            cleaned_url = clean_youtube_url(url)
-            all_channels = supabase.table('channels').select('channel_id').execute()
-            if all_channels.data:
-                for ch in all_channels.data:
-                    db_id = ch.get('channel_id', '')
-                    if cleaned_url in db_id or db_id in cleaned_url:
-                        return jsonify({'success': False, 'message': '频道已存在', 'channel_id': db_id})
             return jsonify({'success': False, 'message': '无法识别频道ID'})
     except Exception as e:
         return jsonify({'success': False, 'message': f'上传失败: {e}'})
