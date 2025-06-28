@@ -194,23 +194,31 @@ def clean_youtube_url(url):
 
 def extract_official_channel_id(url):
     import re
+    import urllib.parse
     url = urllib.parse.unquote(url)  # 先解码
+    print("原始URL:", url, flush=True)
     url = clean_youtube_url(url)
+    print("清洗后URL:", url, flush=True)
     # 1. 先正则提取UC开头ID
     m = re.search(r'(UC[\w-]{20,})', url)
     if m:
+        print("正则提取UC ID:", m.group(1), flush=True)
         return m.group(1)
     # 2. 其它格式，统一用API查
     api_key = get_youtube_api_key()
+    print("API KEY:", api_key, flush=True)
     if not api_key:
+        print("未获取到API KEY", flush=True)
         return None
     # handle (@xxx)
     m = re.search(r'youtube\.com/(?:@)([\w\.-]+)', url)
     if m:
         handle = m.group(1)
         api_url = f"https://www.googleapis.com/youtube/v3/channels?part=id&forHandle={handle}&key={api_key}"
+        print("handle查API:", api_url, flush=True)
         resp = requests.get(api_url)
         data = resp.json()
+        print("API返回:", data, flush=True)
         if 'items' in data and data['items']:
             return data['items'][0]['id']
     # user
@@ -218,21 +226,25 @@ def extract_official_channel_id(url):
     if m:
         username = m.group(1)
         api_url = f"https://www.googleapis.com/youtube/v3/channels?part=id&forUsername={username}&key={api_key}"
+        print("user查API:", api_url, flush=True)
         resp = requests.get(api_url)
         data = resp.json()
+        print("API返回:", data, flush=True)
         if 'items' in data and data['items']:
             return data['items'][0]['id']
     # /c/自定义名
     m = re.search(r'youtube\.com/c/([\w\.-]+)', url)
     if m:
         cname = m.group(1)
-        # 先查search接口拿channelId
         api_url = f"https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q={cname}&key={api_key}"
+        print("c查API:", api_url, flush=True)
         resp = requests.get(api_url)
         data = resp.json()
+        print("API返回:", data, flush=True)
         if 'items' in data and data['items']:
             return data['items'][0]['snippet']['channelId']
     # youtu.be短链、其它特殊情况可继续补充
+    print("全部分支未命中，返回None", flush=True)
     return None
 
 if __name__ == '__main__':
