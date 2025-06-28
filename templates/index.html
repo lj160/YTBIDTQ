@@ -679,6 +679,7 @@
                     if (channelId) {
                         lastChannelId = channelId;
                         lastChannelUrl = url;
+                        console.log('查询赋值:', lastChannelId, lastChannelUrl);
                     }
                     let msg = message;
                     if (exists && message === '频道已存在') {
@@ -716,6 +717,9 @@
                 let payload = { channel_url: url };
                 if (lastChannelId && lastChannelUrl === url) {
                     payload.channel_id = lastChannelId;
+                    console.log('上传带ID:', payload);
+                } else {
+                    console.log('上传未带ID:', payload);
                 }
                 const response = await fetch('/api/upload', {
                     method: 'POST',
