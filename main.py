@@ -141,7 +141,7 @@ def query_channel():
 def upload_channel():
     data = request.get_json()
     url = data.get('channel_url', '').strip()
-    channel_id = data.get('channel_id')
+    channel_id = data.get('channel_id')  # 必须优先用前端传来的 channel_id
     if not channel_id:
         channel_id = extract_official_channel_id(url)
         if not channel_id:
