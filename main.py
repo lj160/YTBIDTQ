@@ -162,7 +162,7 @@ def upload_channel():
                 return jsonify({'success': False, 'message': '上传失败，未返回数据'})
             return jsonify({'success': True, 'message': '频道成功上传到<span style="color:#d32f2f;font-weight:bold;">黑名单</span>', 'channel_id': channel_id})
         else:
-            return jsonify({'success': False, 'message': '无法识别频道ID'})
+            return jsonify({'success': False, 'message': '无法识别频道ID，请检查URL链接是否正确'})
     except Exception as e:
         return jsonify({'success': False, 'message': f'上传失败: {e}'})
 
