@@ -1,6 +1,5 @@
-flask
-psycopg2
-flask-cors
-pytz
-gunicorn
-# force rebuild 
+   flask
+   psycopg2
+   flask-cors
+   pytz
+   gunicorn
