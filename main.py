@@ -12,7 +12,6 @@ import urllib.parse
 
 # 替换为你的 Supabase 项目URL和service_role密钥
 SUPABASE_URL = "https://lbufaargeejqtuwmdmlr.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxidWZhYXJnZWVqcXR1d21kbWxyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MDk5MjY4NiwiZXhwIjoyMDY2NTY4Njg2fQ.JxVnUWmj_8vPMiJnz4MYgHfoING53ch0nY99YCzHZl4"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxidWZhYXJnZWVqcXR1d21kbWxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5OTI2ODYsImV4cCI6MjA2NjU2ODY4Nn0.RdQzCAsiXUTRgnlI7J4VaeETem2iKp10ZtY5Br2YRVs"
 HK_TZ = pytz.timezone('Asia/Hong_Kong')
 
