@@ -74,7 +74,6 @@ def download_channels():
         )
     except Exception as e:
         return jsonify({'success': False, 'message': f'导出失败: {e}'})
-
 @app.route('/api/add_key', methods=['POST'])
 def add_key():
     data = request.get_json()
@@ -87,7 +86,10 @@ def add_key():
         key_hash = hashlib.sha256(api_key_bytes).hexdigest()
         res = supabase.table('api_keys').insert({
             'key_encrypted': api_key_b64,
-            'key_hash': key_hash
+            'key_hash': key_hash,
+            'quota_used': 0,
+            'quota_limit': 9800,
+            'is_valid': True
         }).execute()
         if not res.data:
             return jsonify({'success': False, 'message': '添加失败，未返回数据'})
@@ -107,7 +109,6 @@ def get_keys():
         return jsonify({'success': True, 'keys': res.data})
     except Exception as e:
         return jsonify({'success': False, 'message': f'查询失败: {e}'})
-
 @app.route('/api/query', methods=['POST'])
 def query_channel():
     data = request.get_json()
@@ -164,7 +165,6 @@ def upload_channel():
             return jsonify({'success': False, 'message': '无法识别频道ID，请检查URL链接是否正确'})
     except Exception as e:
         return jsonify({'success': False, 'message': f'上传失败: {e}'})
-
 def get_youtube_api_key():
     # 从api_keys表中选取第一个有效密钥（可扩展为轮询、配额判断等）
     res = supabase.table('api_keys').select('key_encrypted').eq('is_valid', True).limit(1).execute()
@@ -256,4 +256,5 @@ def extract_official_channel_id(url):
     return None
 
 if __name__ == '__main__':
-    app.run(debug=True, port=8080) 
+    app.run(debug=True, port=8080)
+    
